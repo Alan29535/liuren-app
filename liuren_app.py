@@ -2,6 +2,7 @@ import streamlit as st
 from zhdate import ZhDate
 from datetime import datetime
 
+# 转换时间为地支时辰
 def get_shichen_from_time(hour, minute):
     time_decimal = hour + minute / 60
     if 23 <= time_decimal or time_decimal < 1:
@@ -29,52 +30,61 @@ def get_shichen_from_time(hour, minute):
     elif 21 <= time_decimal < 23:
         return "亥"
 
+# 小六壬步进
 def liuren_step(start, steps):
     liuren = ['大安', '留连', '速喜', '赤口', '小吉', '空亡']
     return liuren[(start + steps - 1) % 6]
 
+# 主预测逻辑
 def get_liuren_result(lunar_month, lunar_day, shichen_index):
     step1 = (lunar_month - 1) % 6
     step2 = (lunar_day - 1) % 6
     final = liuren_step(step2, shichen_index + 1)
     return final
 
+# 地支映射
 dizhi_map = {
     "子": 0, "丑": 1, "寅": 2, "卯": 3,
     "辰": 4, "巳": 5, "午": 6, "未": 7,
     "申": 8, "酉": 9, "戌": 10, "亥": 11
 }
 
-st.title("🔮 小六壬占卜")
-st.markdown("请输入阳历日期与时间（如 12:30），查看吉凶卦象")
+# Streamlit 页面设置
+st.set_page_config(page_title="小六壬占卜", page_icon="🔮")
+st.title("🔮 小六壬占卜小程序")
+st.markdown("请输入阳历日期与时间（如 12:30），即可测卦：")
 
 col1, col2 = st.columns(2)
 with col1:
     input_date = st.date_input("阳历日期")
 
 with col2:
-    input_time = st.time_input("预测时间")
+    input_time = st.time_input("时间")
 
 if st.button("开始占卜"):
-    lunar = ZhDate.from_datetime(datetime.combine(input_date, datetime.min.time()))
-    lunar_month = lunar.lunar_month
-    lunar_day = lunar.lunar_day
-    hour = input_time.hour
-    minute = input_time.minute
-    shichen = get_shichen_from_time(hour, minute)
-    shichen_index = dizhi_map[shichen]
-    result = get_liuren_result(lunar_month, lunar_day, shichen_index)
+    try:
+        lunar = ZhDate.from_datetime(datetime.combine(input_date, datetime.min.time()))
+        lunar_month = lunar.lunar_month
+        lunar_day = lunar.lunar_day
+        hour = input_time.hour
+        minute = input_time.minute
 
-    st.success(f"🌙 阴历：{lunar_month}月{lunar_day}日，当前时辰为：{shichen}时")
-    st.markdown(f"### 🧿 占卜结果：{result}")
+        shichen = get_shichen_from_time(hour, minute)
+        shichen_index = dizhi_map[shichen]
+        result = get_liuren_result(lunar_month, lunar_day, shichen_index)
 
-    meaning_map = {
-        "大安": "大安：平稳顺利，万事如意，适合静守。",
-        "留连": "留连：事情拖延、反复、难有结果。",
-        "速喜": "速喜：有喜事来临，适合行动，速战速决。",
-        "赤口": "赤口：口舌是非，容易有冲突，不利交际。",
-        "小吉": "小吉：小有收获，吉中带平，可顺势而为。",
-        "空亡": "空亡：事情落空，计划落空，适合避开风险。"
-    }
+        st.success(f"🌙 阴历：{lunar_month}月{lunar_day}日，当前时辰为：{shichen}时")
+        st.markdown(f"### 🧿 占卜结果：{result}")
 
-    st.info(meaning_map[result])
+        meaning_map = {
+            "大安": "大安：平稳顺利，万事如意，适合静守。",
+            "留连": "留连：事情拖延、反复、难有结果。",
+            "速喜": "速喜：有喜事来临，适合行动，速战速决。",
+            "赤口": "赤口：口舌是非，容易有冲突，不利交际。",
+            "小吉": "小吉：小有收获，吉中带平，可顺势而为。",
+            "空亡": "空亡：事情落空，计划落空，适合避开风险。"
+        }
+
+        st.info(meaning_map[result])
+    except Exception as e:
+        st.error(f"出现错误：{e}")
