@@ -2,7 +2,7 @@ import streamlit as st
 from zhdate import ZhDate
 from datetime import datetime
 
-# 转换时间为地支时辰
+# 将时间（小时+分钟）转换为地支时辰
 def get_shichen_from_time(hour, minute):
     time_decimal = hour + minute / 60
     if 23 <= time_decimal or time_decimal < 1:
@@ -30,12 +30,12 @@ def get_shichen_from_time(hour, minute):
     elif 21 <= time_decimal < 23:
         return "亥"
 
-# 小六壬步进
+# 小六壬顺序
 def liuren_step(start, steps):
     liuren = ['大安', '留连', '速喜', '赤口', '小吉', '空亡']
     return liuren[(start + steps - 1) % 6]
 
-# 主预测逻辑
+# 小六壬预测逻辑
 def get_liuren_result(lunar_month, lunar_day, shichen_index):
     step1 = (lunar_month - 1) % 6
     step2 = (lunar_day - 1) % 6
@@ -49,28 +49,31 @@ dizhi_map = {
     "申": 8, "酉": 9, "戌": 10, "亥": 11
 }
 
-# Streamlit 页面设置
+# 页面 UI 设置
 st.set_page_config(page_title="小六壬占卜", page_icon="🔮")
-st.title("🔮 小六壬占卜小程序")
-st.markdown("请输入阳历日期与时间（如 12:30），即可测卦：")
+st.title("🔮 小六壬占卜工具")
+st.markdown("请输入你要占卜的阳历日期，以及你看到的时间（例如：12:30）")
 
-col1, col2 = st.columns(2)
-with col1:
-    input_date = st.date_input("阳历日期")
+# 输入阳历日期
+input_date = st.date_input("阳历日期")
 
-with col2:
-    input_time = st.time_input("时间")
+# 手动输入时间（字符串）
+input_time_str = st.text_input("请输入你预测当时的时间（格式：HH:MM，例如 12:30）", value="12:30")
 
+# 开始按钮
 if st.button("开始占卜"):
     try:
+        # 阴历换算
         lunar = ZhDate.from_datetime(datetime.combine(input_date, datetime.min.time()))
         lunar_month = lunar.lunar_month
         lunar_day = lunar.lunar_day
-        hour = input_time.hour
-        minute = input_time.minute
 
+        # 时间解析
+        hour, minute = map(int, input_time_str.strip().split(":"))
         shichen = get_shichen_from_time(hour, minute)
         shichen_index = dizhi_map[shichen]
+
+        # 小六壬结果
         result = get_liuren_result(lunar_month, lunar_day, shichen_index)
 
         st.success(f"🌙 阴历：{lunar_month}月{lunar_day}日，当前时辰为：{shichen}时")
@@ -86,5 +89,6 @@ if st.button("开始占卜"):
         }
 
         st.info(meaning_map[result])
+
     except Exception as e:
-        st.error(f"出现错误：{e}")
+        st.error(f"⚠️ 出现错误：{e}\n\n请确保你输入的是正确的时间格式（例如 12:30）")
