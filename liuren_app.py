@@ -30,26 +30,29 @@ def get_shichen_from_time(hour, minute):
     elif 21 <= time_decimal < 23:
         return "亥"
 
-# 小六壬顺序
+# 小六壬顺序步进
 def liuren_step(start, steps):
     liuren = ['大安', '留连', '速喜', '赤口', '小吉', '空亡']
     return liuren[(start + steps - 1) % 6]
 
-# 小六壬预测逻辑
+# 🔧 修正后的三步推理逻辑
 def get_liuren_result(lunar_month, lunar_day, shichen_index):
-    step1 = (lunar_month - 1) % 6
-    step2 = (lunar_day - 1) % 6
-    final = liuren_step(step2, shichen_index + 1)
+    # 第一步：从大安开始数月份
+    month_start = liuren_step(0, lunar_month)
+    # 第二步：从上一步开始数日期
+    day_start = liuren_step(month_start, lunar_day)
+    # 第三步：从上一步开始数时辰
+    final = liuren_step(day_start, shichen_index + 1)
     return final
 
-# 地支映射
+# 地支映射表
 dizhi_map = {
     "子": 0, "丑": 1, "寅": 2, "卯": 3,
     "辰": 4, "巳": 5, "午": 6, "未": 7,
     "申": 8, "酉": 9, "戌": 10, "亥": 11
 }
 
-# 页面 UI 设置
+# Streamlit 页面设置
 st.set_page_config(page_title="小六壬占卜", page_icon="🔮")
 st.title("🔮 小六壬占卜工具")
 st.markdown("请输入你要占卜的阳历日期，以及你看到的时间（例如：12:30）")
@@ -57,23 +60,23 @@ st.markdown("请输入你要占卜的阳历日期，以及你看到的时间（�
 # 输入阳历日期
 input_date = st.date_input("阳历日期")
 
-# 手动输入时间（字符串）
+# 手动输入时间字符串
 input_time_str = st.text_input("请输入你预测当时的时间（格式：HH:MM，例如 12:30）", value="12:30")
 
-# 开始按钮
+# 按钮触发
 if st.button("开始占卜"):
     try:
-        # 阴历换算
+        # 将阳历转换为农历
         lunar = ZhDate.from_datetime(datetime.combine(input_date, datetime.min.time()))
         lunar_month = lunar.lunar_month
         lunar_day = lunar.lunar_day
 
-        # 时间解析
+        # 解析时间字符串
         hour, minute = map(int, input_time_str.strip().split(":"))
         shichen = get_shichen_from_time(hour, minute)
         shichen_index = dizhi_map[shichen]
 
-        # 小六壬结果
+        # 获取最终卦象
         result = get_liuren_result(lunar_month, lunar_day, shichen_index)
 
         st.success(f"🌙 阴历：{lunar_month}月{lunar_day}日，当前时辰为：{shichen}时")
